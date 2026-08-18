@@ -9,6 +9,7 @@
 // ==================Credits===========================
 //         janiczek: creator, developer
 //        brassbeat: developer
+//       drunkshinx: developer
 //            zment: display framework
 //     smiling-marx: pointing me in the right direction
 //          hygkolk: cheat table with some use cases
@@ -185,6 +186,8 @@ state("PeggleWoW", "wowPortable")
     int clearage : "PeggleWoW.exe", 0x002b9cfc, 0x864, 0x72c, 0x244;
     int levelsEnded : "PeggleWoW.exe", 0x002b9cfc, 0x914, 0x198;
     int selectedMaster : "PeggleWoW.exe", 0x002b9cfc, 0x930, 0x3c;
+    int loadingBarProgress : "PeggleWoW.exe", 0x0013CC80, 0x4C, 0x14, 0x40C;
+    int fairiesClicked : "PeggleWoW.exe", 0x002B84A8, 0x68, 0x844;
 }
 
 startup
@@ -213,6 +216,13 @@ startup
     settings.Add("ILModeChallenge", false, "Challenge completed", "ILMode");
     settings.Add("MultilevelSubsplits", false, "Multilevel splits", "ILModeChallenge");
     settings.SetToolTip("MultilevelSubsplits", "Split for every level in a multilevel challenge.");
+
+    settings.Add("PeggleWoW50Fairies%", false, "PeggleWoW50Fairies%");
+    settings.SetToolTip("PeggleWoW50Fairies%", "used for the 50 fairies run in Peggle: World of Warcraft Edition. Make sure to choose 1 mode below.");
+
+    settings.Add("everyFairy", true, "Every fairy", "PeggleWoW50Fairies%");
+    settings.Add("10fairies", false, "Every 10 fairies", "PeggleWoW50Fairies%");
+    settings.Add("50fairies", false, "50 fairies", "PeggleWoW50Fairies%");
 
     settings.Add("BonusSettings", true, "Auxiliary settings");
     settings.SetToolTip("BonusSettings", "These are extra, make sure you pick a mode above.");
@@ -482,6 +492,10 @@ onStart
 
 start
 {
+    if (settings["PeggleWoW50Fairies%"] && (version == "wowPortable"))
+    {
+        return (old.loadingBarProgress == 24) && (current.loadingBarProgress == 25);
+    }
     // check if the correct master is selected if specified,
     // else suppress start
     if (settings["specifyMaster"])
@@ -544,6 +558,24 @@ onSplit
 
 split
 {
+    // Handles PeggleWoW 50 fairies
+    if (settings["PeggleWoW50Fairies%"] && (version == "wowPortable"))
+    {  
+        if (settings["everyFairy"])
+        {
+            return (current.fairiesClicked == old.fairiesClicked + 1);
+        }
+        if (settings["10fairies"])
+        {
+            print("FAIRIES = " + current.fairiesClicked);
+            return (old.fairiesClicked % 10 == 9 && current.fairiesClicked % 10 == 0);
+        }
+        if (settings["50fairies"])
+        {
+            return (old.fairiesClicked == 49 && current.fairiesClicked == 50);
+        }
+    }
+
     // Handle nights challenges
     if (!vars.isDeluxeBaseVersion && (settings["ILModeChallenge"] || (settings["LPMode"] && (current.gameMode == 4))))
     {
